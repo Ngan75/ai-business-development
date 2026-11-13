@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# AI Sales Development
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A React + TypeScript + Vite prototype for sales development and hardware costing workflows. The workspace includes 12 navigation areas: Dashboard, CRM, Customer, RFQ, BOM AI, PCB AI, Harness AI, AI Chat, Costing, Supplier, Competitor and Settings.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Run `npm run build` to type-check and create the production bundle.
+
+## Costing workflow
+
+The Costing module supports BOM PCBA, Wire harness and IoT; editable per-product quantities and costs; overhead and gross-margin-based selling price; browser-local persistence; Excel/CSV import and Excel export; and browser print-to-PDF.
+
+Excel import reads the first worksheet and expects a description/item column, a unit cost/price column, and optionally a quantity column. Imported rows replace the current rows in the selected product category. A 10 MB file-size limit is applied. Sample values are illustrative and should be replaced with verified supplier and manufacturing costs.
+
+The cost optimizer is a local, rule-based prototype that estimates possible savings for process-related rows. It is not connected to an AI model, supplier pricing, live inventory or market data. Review estimates with manufacturing and procurement before applying or quoting. Business data currently resides in the browser's local storage and is not shared across devices or users.
+
+## Current limitations
+
+Several areas use sample data or prototype behavior. Production deployment requires a secured backend, authentication and authorization, shared database, audit trail, validated integrations, and tests. Never place private API keys in frontend code or browser storage.
