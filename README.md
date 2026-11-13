@@ -1,24 +1,22 @@
-# AI Sales Development
+## Sample manufacturing cost assumptions
 
-A React + TypeScript + Vite prototype for a hardware sales-development workflow with 12 navigation areas: Dashboard, CRM, Customer, RFQ, BOM AI, PCB AI, Harness AI, AI Chat, Costing, Supplier, Competitor and Settings.
+The Costing module starts with illustrative per-unit estimates (USD) for three product categories. These are sample scenarios for a contract manufacturer, not market quotes:
 
-## Run locally
+| Category | Direct cost | Example items |
+| --- | ---: | --- |
+| BOM PCBA | $19.75 / board | Components $11.25, 4-layer PCB fabrication $5.00, SMT/DIP assembly $2.50, functional test/QA $1.00 |
+| Wire harness | $9.50 / harness | Wire/materials $4.20, connectors/terminals $2.80, cut-strip-crimp labor $1.60, assembly/electrical test $0.90 |
+| IoT | $26.50 / device | Electronics $12.50, connectivity/sensor module $8.00, enclosure/assembly/firmware $4.50, device test/QA $1.50 |
+
+Default quotation assumptions are 8% overhead on direct costs and 25% gross margin on the selling price. The price formula is `selling price = (direct cost × (1 + overhead rate)) / (1 - margin rate)`. Under these assumptions, the illustrative selling prices are approximately $28.44 per PCBA, $13.68 per harness, and $38.16 per IoT device, before taxes, freight, duties, or other unlisted charges. Quantities default to one per BOM row and 1,000 order units.
+
+All figures are synthetic placeholders for demonstrating the workflow. Replace them with actual BOMs, supplier quotations, labor rates, yields, tooling/NRE, scrap, currency conversion, taxes, and delivery terms before using any customer quote. The local rule-based cost-savings suggestions are estimates only and are not AI-generated or guaranteed.
+
+Excel import expects item/description, quantity (optional), and unit-cost columns in the first worksheet. Import replaces rows only in the selected category. Data is saved in this browser's local storage; it is not synchronized or backed up automatically.
+
+## Build and lint
 
 ```bash
-npm install
-npm run dev
+npm run build
+npm run lint
 ```
-
-Run `npm run build` to type-check and create the production bundle, and `npm run lint` for Oxlint.
-
-## Costing workflow
-
-The Costing module supports BOM PCBA, Wire harness and IoT; editable per-product quantities and costs; overhead and gross-margin-based selling price; browser-local persistence; Excel/CSV import and Excel export; and browser print-to-PDF.
-
-Excel import reads the first worksheet and expects a description/item column, a unit cost/price column, and optionally a quantity column. Imported rows replace the current rows in the selected product category. A 10 MB file-size limit is applied. Sample values are illustrative and should be replaced with verified supplier and manufacturing costs.
-
-The cost optimizer is a local, rule-based prototype that estimates possible savings for process-related rows. It is not connected to an AI model, supplier pricing, live inventory or market data. The chat assistant likewise uses local rules and workspace data; it is not an AI model. Review estimates with manufacturing and procurement before applying or quoting. Business data currently resides in the browser's local storage and is not shared across devices or users.
-
-## Current limitations and production readiness
-
-Several areas still use sample data or prototype behavior. Production deployment requires a secured backend, authentication and authorization, shared database, audit trail, validated integrations, and automated tests. Never place private API keys in frontend code or browser storage. Settings and dashboard values are stored/read locally and do not provide team-wide configuration or synchronization.
