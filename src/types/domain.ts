@@ -1,5 +1,6 @@
 export type ProductCategory = 'pcba' | 'wire_harness' | 'iot';
-export type CurrencyCode = string;
+/** MVP is intentionally USD-only. Supporting other currencies requires an explicit FX design. */
+export type CurrencyCode = 'USD';
 export type PricingMethod = 'gross_margin' | 'markup';
 export type RevisionStatus = 'draft' | 'in_review' | 'approved' | 'rejected' | 'superseded';
 export type RfqStatus = 'new' | 'triage' | 'costing' | 'quoted' | 'won' | 'lost' | 'cancelled';
