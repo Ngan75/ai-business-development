@@ -1,22 +1,46 @@
-## Sample manufacturing cost assumptions
+# AI Sales Development
 
-The Costing module starts with illustrative per-unit estimates (USD) for three product categories. These are sample scenarios for a contract manufacturer, not market quotes:
+Prototype web app for business development, RFQ handling, and manufacturing cost estimation for BOM PCBA, Wire harness, and IoT.
 
-| Category | Direct cost | Example items |
-| --- | ---: | --- |
-| BOM PCBA | $19.75 / board | Components $11.25, 4-layer PCB fabrication $5.00, SMT/DIP assembly $2.50, functional test/QA $1.00 |
-| Wire harness | $9.50 / harness | Wire/materials $4.20, connectors/terminals $2.80, cut-strip-crimp labor $1.60, assembly/electrical test $0.90 |
-| IoT | $26.50 / device | Electronics $12.50, connectivity/sensor module $8.00, enclosure/assembly/firmware $4.50, device test/QA $1.50 |
+## Run locally
 
-Default quotation assumptions are 8% overhead on direct costs and 25% gross margin on the selling price. The price formula is `selling price = (direct cost × (1 + overhead rate)) / (1 - margin rate)`. Under these assumptions, the illustrative selling prices are approximately $28.44 per PCBA, $13.68 per harness, and $38.16 per IoT device, before taxes, freight, duties, or other unlisted charges. Quantities default to one per BOM row and 1,000 order units.
+```bash
+npm install
+npm run dev
+```
 
-All figures are synthetic placeholders for demonstrating the workflow. Replace them with actual BOMs, supplier quotations, labor rates, yields, tooling/NRE, scrap, currency conversion, taxes, and delivery terms before using any customer quote. The local rule-based cost-savings suggestions are estimates only and are not AI-generated or guaranteed.
-
-Excel import expects item/description, quantity (optional), and unit-cost columns in the first worksheet. Import replaces rows only in the selected category. Data is saved in this browser's local storage; it is not synchronized or backed up automatically.
-
-## Build and lint
+Production build and lint commands:
 
 ```bash
 npm run build
 npm run lint
 ```
+
+## Costing baseline
+
+The product owner has approved USD as the MVP currency and the following official internal cost baseline. These amounts are stored in the Costing source and pricing policy; keep them unchanged unless the owner explicitly requests a price update.
+
+| Category | Direct cost / unit | Default selling price / unit* |
+| --- | ---: | ---: |
+| BOM PCBA | $19.75 | $28.44 |
+| Wire harness | $9.50 | $13.68 |
+| IoT | $26.50 | $38.16 |
+
+*Calculated with 8% overhead applied to direct cost and 25% gross margin on selling price. Minimum gross margin is 20%; a lower value is flagged for manager review. Tax, freight, duties, payment charges, NRE/tooling, yield/scrap, and FX are excluded unless entered separately. See [the approved pricing policy](docs/PRICING_POLICY.md) for line-item values and formulas.
+
+## Product documents
+
+- [PRD and acceptance criteria](docs/PRD.md)
+- [Approved pricing policy](docs/PRICING_POLICY.md)
+- [Business decisions](docs/BUSINESS_DECISIONS.md)
+- [Database schema proposal](docs/DATABASE_SCHEMA.md)
+- [API contract proposal](docs/API_CONTRACT.md)
+- [Delivery roadmap](docs/ROADMAP.md)
+- [12-menu wireframes](docs/WIREFRAMES.md)
+- [Implementation status and remaining work](docs/IMPLEMENTATION_STATUS.md)
+
+## Current limitations
+
+This repository is currently a frontend prototype. Costing state is stored in this browser's localStorage; there is no shared backend, authentication, server-enforced role/approval, database, audit trail, or immutable issued-quote workflow yet. A PDF printed from the browser is a preview, not a binding issued quote. Verify current supplier costs and customer terms before external use.
+
+All supplier and AI integrations shown in other prototype screens must be treated as demonstration UI unless backed by a real, authorized service. Do not put provider secrets in frontend code or browser storage.
