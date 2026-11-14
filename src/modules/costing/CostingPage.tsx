@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { BUSINESS_DEFAULTS, calculatePricing, type ProductCategory } from '../../lib/pricing';
+import { BUSINESS_DEFAULTS, calculatePricing } from '../../lib/pricing';
+import type { ProductCategory } from '../../types/domain';
 
 type CostLine = { id: string; name: string; quantityPerUnit: number; unitCost: number };
 type CostData = Record<ProductCategory, CostLine[]>;
@@ -124,7 +125,7 @@ export default function CostingPage() {
       const nameKey = findHeader(['item', 'description', 'partname', 'hangmuc', 'tenlinhkien']);
       const quantityKey = findHeader(['quantity', 'qty', 'soluong', 'dinhmuc']);
       const unitCostKey = findHeader(['unitcost', 'unitprice', 'dongia', 'giadonvi', 'chiphidonvi']);
-      const currencyKey = findHeader(['currency', 'tiente', 'ma tien te']);
+      const currencyKey = findHeader(['currency', 'tiente', 'matiente']);
       if (!nameKey || !unitCostKey) throw new Error('Cần có cột Item/Description và Unit Cost/Đơn giá.');
       const imported = rows.flatMap((row, index) => {
         const sourceCurrency = currencyKey ? String(row[currencyKey] ?? '').trim().toUpperCase() : 'USD';
