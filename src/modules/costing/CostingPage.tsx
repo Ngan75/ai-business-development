@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
 import { BUSINESS_DEFAULTS, calculatePricing } from '../../lib/pricing';
 import type { ProductCategory } from '../../types/domain';
@@ -12,8 +12,8 @@ const categories: { id: ProductCategory; label: string; description: string }[] 
   { id: 'iot', label: 'IoT', description: 'PCBA, module kết nối, lắp ráp, firmware và kiểm thử' },
 ];
 
-// Synthetic example inputs for a manufacturing/contract-assembly workflow. Replace before quoting customers.
-const sampleCosts: CostData = {
+/** Official internal unit-cost baseline approved by the product owner. */
+const officialCosts: CostData = {
   pcba: [
     { id: 'pcba-1', name: 'Linh kiện BOM (IC, passive, MCU)', quantityPerUnit: 1, unitCost: 11.25 },
     { id: 'pcba-2', name: 'Gia công PCB FR-4, 4 lớp', quantityPerUnit: 1, unitCost: 5 },
@@ -39,15 +39,16 @@ const money = (value: number) => new Intl.NumberFormat('en-US', {
   style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
 }).format(Number.isFinite(value) ? value : 0);
 const safeNumber = (value: number) => Number.isFinite(value) && value >= 0 ? value : 0;
+const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 function loadCostData(): CostData {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-    if (!saved || typeof saved !== 'object') return sampleCosts;
+    if (!saved || typeof saved !== 'object') return officialCosts;
     const data = saved as Partial<CostData>;
     return Object.fromEntries(categories.map(({ id }) => {
       const rows = data[id];
-      if (!Array.isArray(rows)) return [id, sampleCosts[id]];
+      if (!Array.isArray(rows)) return [id, officialCosts[id]];
       return [id, rows.map((row, index) => ({
         id: String(row.id ?? `${id}-${index}`),
         name: String(row.name ?? 'Khoản chi phí'),
@@ -56,7 +57,7 @@ function loadCostData(): CostData {
       }))];
     })) as CostData;
   } catch {
-    return sampleCosts;
+    return officialCosts;
   }
 }
 
@@ -107,7 +108,7 @@ export default function CostingPage() {
     [category]: previous[category].filter((line) => line.id !== id),
   }));
 
-  const importExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importExcel = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileError('');
@@ -120,7 +121,6 @@ export default function CostingPage() {
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
       if (!rows.length) throw new Error('Sheet đầu tiên không có dữ liệu.');
       const headers = Object.keys(rows[0]);
-      const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().replace(/[^a-z0-9]/g, '');
       const findHeader = (aliases: string[]) => headers.find((header) => aliases.some((alias) => normalize(header).includes(alias)));
       const nameKey = findHeader(['item', 'description', 'partname', 'hangmuc', 'tenlinhkien']);
       const quantityKey = findHeader(['quantity', 'qty', 'soluong', 'dinhmuc']);
@@ -143,7 +143,7 @@ export default function CostingPage() {
       });
       if (!imported.length) throw new Error('Không có dòng chi phí hợp lệ.');
       setCostData((previous) => ({ ...previous, [category]: imported }));
-      setNotice(`Đã nhập ${imported.length} dòng USD vào ${categories.find((item) => item.id === category)?.label}. Các dòng hiện tại của danh mục này đã được thay thế.`);
+      setNotice(`Đã nhập ${imported.length} dòng USD vào ${categories.find((item) => item.id === category)?.label}. Chỉ danh mục này được thay thế.`);
     } catch (error) {
       setFileError(error instanceof Error ? error.message : 'Không thể đọc file.');
     } finally {
@@ -168,14 +168,14 @@ export default function CostingPage() {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Costing_USD');
     XLSX.writeFile(workbook, `Costing-${category}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
-  const resetSamples = () => {
-    if (!window.confirm('Khôi phục chi phí mẫu cho cả ba danh mục? Dữ liệu đã nhập sẽ bị thay thế.')) return;
-    setCostData(sampleCosts);
+  const restoreOfficialCosts = () => {
+    if (!window.confirm('Khôi phục đơn giá cơ sở chính thức cho cả ba danh mục? Các thay đổi riêng của anh sẽ bị thay thế.')) return;
+    setCostData(officialCosts);
     setOrderQuantity(BUSINESS_DEFAULTS.defaultOrderQuantity);
     setOverheadPercent(BUSINESS_DEFAULTS.overheadRate * 100);
     setMarginPercent(BUSINESS_DEFAULTS.grossMarginRate * 100);
     setProjectName('Dự án mẫu');
-    setNotice('Đã khôi phục dữ liệu minh họa. Hãy thay bằng chi phí thực tế trước khi dùng để báo giá khách hàng.');
+    setNotice('Đã khôi phục đơn giá cơ sở chính thức và quy tắc giá mặc định.');
   };
 
   return (
@@ -194,10 +194,10 @@ export default function CostingPage() {
         </div>
       </header>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
-        <strong>DỮ LIỆU MẪU — KHÔNG PHẢI BÁO GIÁ THỰC.</strong> Mặc định USD; chi phí mẫu chỉ minh họa. Thay bằng báo giá nhà cung cấp, nhân công và định mức đã xác minh trước khi gửi khách hàng. Thuế, vận chuyển, NRE/tooling và hao hụt chưa tính nếu chưa nhập riêng.
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950">
+        <strong>ĐƠN GIÁ CƠ SỞ CHÍNH THỨC · USD.</strong> Các khoản chi phí BOM PCBA, Wire harness và IoT dưới đây được chủ sản phẩm xác nhận làm cơ sở chính thức hiện hành. Khi anh yêu cầu cập nhật, em sẽ áp dụng bộ giá mới; giá bán được tính riêng theo overhead và gross margin đang chọn.
       </div>
-      {(notice || fileError) && <div role="status" className={`flex items-start justify-between gap-3 rounded-lg border p-3 text-xs ${fileError ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+      {(notice || fileError) && <div role={fileError ? 'alert' : 'status'} className={`flex items-start justify-between gap-3 rounded-lg border p-3 text-xs ${fileError ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
         <span>{fileError || notice}</span><button aria-label="Đóng thông báo" className="text-lg leading-none" onClick={() => { setNotice(''); setFileError(''); }}>×</button>
       </div>}
 
@@ -239,7 +239,7 @@ export default function CostingPage() {
           </div>
           <div className="mt-4 rounded-lg bg-slate-50 p-3 text-[11px] leading-5 text-slate-600">Chi phí sản xuất = chi phí trực tiếp + overhead.<br />Giá bán = chi phí sản xuất ÷ (1 − gross margin).</div>
           {pricing.belowMinimumMargin && <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Margin dưới mức tối thiểu {BUSINESS_DEFAULTS.minimumGrossMarginRate * 100}%. Cần quản lý rà soát trước khi phát hành báo giá.</p>}
-          <button onClick={resetSamples} className="mt-4 text-xs font-medium text-slate-500 underline underline-offset-2 no-print">Khôi phục dữ liệu mẫu</button>
+          <button onClick={restoreOfficialCosts} className="mt-4 text-xs font-medium text-slate-500 underline underline-offset-2 no-print">Khôi phục đơn giá cơ sở chính thức</button>
         </aside>
       </div>
 
@@ -252,7 +252,7 @@ export default function CostingPage() {
           <article className="rounded-lg border border-emerald-200 bg-emerald-50 p-3"><p className="text-[10px] font-semibold text-emerald-800">GIÁ BÁN GỢI Ý / SP</p><strong className="mt-2 block text-xl text-emerald-800">{money(pricing.sellingPricePerUnit)}</strong><small className="text-emerald-800">Chưa gồm thuế/phí ngoài</small></article>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-900 px-4 py-3 text-white"><span className="text-xs">TỔNG GIÁ TRỊ ĐƠN HÀNG · {projectName || 'Chưa đặt tên dự án'}</span><strong className="text-lg text-emerald-200">{money(pricing.orderTotal)}</strong></div>
-        <p className="mt-3 text-[10px] leading-relaxed text-slate-500">Kết quả là ước tính theo dữ liệu đang nhập, không phải báo giá có hiệu lực. Cần xác minh giá NCC, định mức, tiền công và điều khoản giao hàng; giá chưa gồm thuế, vận chuyển, NRE/tooling và hao hụt nếu chưa nhập riêng.</p>
+        <p className="mt-3 text-[10px] leading-relaxed text-slate-500">Đơn giá cơ sở do chủ sản phẩm xác nhận. Giá bán là kết quả tính theo giả định đang chọn; thuế, vận chuyển, NRE/tooling và hao hụt chưa gồm nếu chưa nhập riêng.</p>
       </section>
     </div>
   );

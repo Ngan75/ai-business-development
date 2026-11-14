@@ -5,7 +5,7 @@ export const BUSINESS_DEFAULTS = {
   grossMarginRate: 0.25,
   minimumGrossMarginRate: 0.2,
   defaultOrderQuantity: 1000,
-  /** MVP quote prices exclude taxes, freight, duties, NRE/tooling, and yield/scrap unless separately added. */
+  /** Taxes, freight, duties, NRE/tooling, and yield/scrap are excluded unless entered separately. */
   includedCharges: ['direct_cost', 'overhead'] as const,
 } as const;
 
@@ -28,10 +28,7 @@ export interface PricingResult {
   belowMinimumMargin: boolean;
 }
 
-/**
- * Calculates an illustrative USD estimate. Backend decimal arithmetic must be
- * authoritative for production quotes; this helper is suitable for UI previews.
- */
+/** Frontend USD preview calculator. Backend decimal arithmetic is authoritative for production quotes. */
 export function calculatePricing(input: PricingInput): PricingResult {
   const directCost = Number(input.directCost);
   const orderQuantity = Number(input.orderQuantity);

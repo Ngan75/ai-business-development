@@ -1,25 +1,39 @@
-# Pricing policy — MVP defaults
+# Pricing policy — approved official baseline
 
-**Approved product baseline:** USD-only currency and initial costing rules, confirmed by the product owner on 2026-11-14. This document resolves the initial policy decisions for MVP and supersedes any conflicting open questions or examples in the PRD, logical schema, API contract, wireframes, and prototype UI. Changes later require an explicit policy revision and must not alter issued quote snapshots.
+**Status:** Approved by the product owner. This is the official current pricing baseline for the application, effective 2026-11-14. Keep it unchanged unless the owner explicitly requests a price or policy update. This policy supersedes older prototype/sample wording in other documents and screens.
 
-## Currency
+## Official unit-cost baseline (USD)
 
-- USD is the only supported currency for MVP across costing, RFQ estimates, quotes, API writes, and exports.
-- Persist and return `currency: "USD"` for monetary values. Backend money values use decimal arithmetic and decimal-string API serialization.
-- Do not silently convert foreign currency. Imports with an explicit non-USD currency are rejected with a row-level message. A file without a currency column is interpreted as USD and the user is told before import.
-- Supporting additional currencies requires an approved FX source, conversion timestamp, rounding rules, and immutable quote snapshots; this is not in MVP.
+These approved values are the official internal unit-cost baseline currently used by Costing. They are not a claim that the amounts have been independently audited against supplier market quotations. Do not label them as temporary sample prices. The owner will request updates when changes are required.
 
-## Initial pricing defaults
+| Category | Cost item | Official cost / unit |
+| --- | --- | ---: |
+| BOM PCBA | Components (IC, passive, MCU) | $11.25 |
+| BOM PCBA | PCB FR-4 fabrication, 4 layers | $5.00 |
+| BOM PCBA | SMT/DIP assembly and consumables | $2.50 |
+| BOM PCBA | Functional test and QA | $1.00 |
+| **BOM PCBA** | **Direct cost total** | **$19.75** |
+| Wire harness | Wire, heat shrink, tape | $4.20 |
+| Wire harness | Connector, housing and terminal | $2.80 |
+| Wire harness | Cut/strip/crimp labor | $1.60 |
+| Wire harness | Assembly, continuity test and QA | $0.90 |
+| **Wire harness** | **Direct cost total** | **$9.50** |
+| IoT | PCBA / electronic components | $12.50 |
+| IoT | Wi-Fi/BLE module and sensors | $8.00 |
+| IoT | Enclosure, assembly and firmware loading | $4.50 |
+| IoT | Connectivity test and QA | $1.50 |
+| **IoT** | **Direct cost total** | **$26.50** |
 
-| Setting | Default | Rule |
+## Official initial pricing rules
+
+| Setting | Approved value | Rule |
 | --- | ---: | --- |
+| Currency | USD only | Do not silently convert foreign currency |
 | Overhead | 8% | Applied to direct unit cost |
 | Pricing method | Gross margin | Margin is a percentage of selling price, not markup on cost |
-| Gross margin | 25% | Initial target margin |
+| Target gross margin | 25% | Used for the suggested selling price by default |
 | Minimum gross margin | 20% | Below this, warn and require manager review/approval before issue |
-| Order quantity | 1,000 PCS | Sample UI default only; replace with RFQ quantity |
-
-Formulas:
+| Default order quantity | 1,000 PCS | Initial UI default; replace with actual RFQ quantity |
 
 ```text
 direct_cost_per_unit = sum(quantity_per_unit × unit_cost)
@@ -30,33 +44,26 @@ profit_per_unit = selling_price_per_unit - manufacturing_cost_per_unit
 order_total = selling_price_per_unit × order_quantity
 ```
 
-Validate nonnegative costs/quantities, overhead rate in `[0, 1]`, and gross margin in `[0, 1)`. Values below the minimum margin are estimates only until reviewed. UI rounding is two USD decimals; authoritative backend calculations retain decimal precision and apply the quote rounding policy.
+Validate nonnegative costs/quantities, overhead rate in `[0, 1]`, and gross margin in `[0, 1)`. Values below the minimum margin require manager review. UI displays two USD decimals; authoritative backend calculations should retain decimal precision and apply the quote rounding policy.
 
-## Charges not included unless explicitly entered
+## Calculated baseline price references
 
-VAT/sales tax, freight, duties, payment fees, tooling/NRE, yield/scrap, and FX are excluded by default. If added, show them as separate cost or quote lines and preserve whether the unit price includes them.
+These values are calculated from the approved direct costs and approved default rules. They are suggested selling prices, not separate manually entered costs.
 
-## Example calculations
-
-These are synthetic sample manufacturing inputs only—not supplier market prices or a customer offer.
-
-| Category | Direct cost | 8% overhead | Manufacturing cost | Price at 25% margin |
+| Category | Direct cost | Overhead (8%) | Manufacturing cost | Suggested sell price (25% gross margin) |
 | --- | ---: | ---: | ---: | ---: |
 | BOM PCBA | $19.75 | $1.58 | $21.33 | $28.44 |
 | Wire harness | $9.50 | $0.76 | $10.26 | $13.68 |
 | IoT | $26.50 | $2.12 | $28.62 | $38.16 |
 
-## Product and technical safeguards
+## Exclusions and import behavior
 
-- All prototype sample prices are clearly marked synthetic and must be replaced with current supplier quotes, labor rates, yields, and validated process assumptions before customer use.
-- Savings hints based on local rules are estimates, not AI-verified savings or guaranteed savings.
-- Until backend authentication, audit, approvals, and immutable quote revisions exist, the frontend is a prototype and must not be used to issue binding quotes.
-- `src/lib/pricing.ts` is the current frontend preview calculator. Server-side decimal calculation will be authoritative when the backend is implemented.
-- The Costing screen imports Excel/CSV into only the currently selected category and replaces its current cost lines only after the whole import validates. Explicit foreign-currency values are rejected; currency-less imports are treated as USD.
+VAT/sales tax, freight, duties, payment fees, tooling/NRE, yield/scrap, and FX are excluded unless separately entered and displayed. USD is the only supported currency for MVP. Explicit non-USD currency in imported files is rejected; a file without a currency column is interpreted as USD and the application identifies the imported values as USD.
 
-## Follow-up implementation
+## Operational safeguards
 
-- Enforce USD at backend request validation and in PostgreSQL constraints.
-- Persist policy changes with effective dates; snapshot policy and calculations on quote issue.
-- Add unit tests for formula examples, invalid rates, negative values, rounding and import behavior when a test runner is introduced.
-- Ensure quote issuance workflow checks the 20% minimum margin and requires an authorized manager approval for exceptions.
+- Costing is a frontend prototype using browser localStorage; it is not a shared, audited, multi-user source of truth.
+- The official baseline applies on initial load and when the user explicitly chooses “restore official costs.” Locally saved user edits remain in that browser until restored or changed.
+- Issued customer quotations require a backend with authentication, audit, approvals and immutable quote revisions. The current UI does not issue binding quotes.
+- `src/lib/pricing.ts` calculates the frontend preview. Once a backend exists, server-side decimal arithmetic must be authoritative.
+- Keep the official amounts unchanged unless the product owner explicitly requests a price update. Any approved change should update this policy and the application baseline together.
